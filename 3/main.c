@@ -1,3 +1,4 @@
+#include <memory.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,18 +10,17 @@
 
 typedef struct BigInt {
   int size;
-  int8_t *number;
+  int8_t number[MAX_LENGTH];
 } BigInt;
 
 void freeBigInt(BigInt *bigInt) {
-  free(bigInt->number);
+  memset(bigInt, 0, sizeof(BigInt));
   free(bigInt);
 }
 
 BigInt *make_BigInt(char *inputValue) {
-  BigInt *bigInt = (BigInt *)malloc(sizeof(BigInt));
+  BigInt *bigInt = (BigInt *)calloc(1, sizeof(BigInt));
   bigInt->size = strnlen(inputValue, MAX_LENGTH);
-  bigInt->number = (int8_t *)calloc(MAX_LENGTH, sizeof(int8_t));
   for (int i = bigInt->size - 1; i >= 0; i--) {
     bigInt->number[bigInt->size - 1 - i] = inputValue[i] - '0';
   }
@@ -89,12 +89,16 @@ void dividedByTwo(BigInt *bigInt) {
 }
 
 char *BigIntToString(BigInt *bigInt) {
-  char *str = (char *)malloc((bigInt->size + 1) * sizeof(char));
-  str[bigInt->size] = '\0';
+  char *str = (char *)calloc(MAX_LENGTH, sizeof(char));
   for (int i = bigInt->size - 1; i >= 0; i--) {
     str[bigInt->size - 1 - i] = bigInt->number[i] + '0';
   }
   return str;
+}
+
+void freeBigStr(char *bigStr) {
+  memset(bigStr, 0, MAX_LENGTH);
+  free(bigStr);
 }
 
 int isEven(BigInt *bigInt) { return !(bigInt->number[0] & 1); }
@@ -146,8 +150,10 @@ int main() {
   scanf("%s", buffer);
   BigInt *b = make_BigInt(buffer);
   BigInt *result = binaryGCD(a, b);
-  printf("%s\n", BigIntToString(result));
+  char *result_str = BigIntToString(result);
+  printf("%s\n", result_str);
   freeBigInt(a);
   freeBigInt(b);
-  free(buffer);
+  freeBigStr(result_str);
+  freeBigStr(buffer);
 }
