@@ -17,6 +17,7 @@ typedef struct DSA
     uint16_t size;
     int16_t head;
     int16_t tail;
+    bool full;
 } DSA;
 
 DSA *make_DSA(int16_t size)
@@ -30,20 +31,26 @@ DSA *make_DSA(int16_t size)
 int16_t kill_othoer_players(DSA *dsa, int attack_power)
 {
     int16_t size = dsa->size;
-    int16_t new_tail = (dsa->tail - 1 + size) % size, count = 1;
-    while (new_tail != dsa->head)
+    int16_t new_tail = dsa->tail;
+    while (dsa->tail != dsa->head || dsa->full)
     {
-        new_tail = (new_tail - 1 + size) % size;
+        new_tail = (dsa->tail - 1 + size) % size;
         if (dsa->area[new_tail].attack_power >= attack_power)
             break;
-        count++;
+        printf(" %d", dsa->area[new_tail].index);
+        dsa->tail = new_tail;
+        dsa->full = false;
     }
-    return count;
 }
 
-void revolution(DSA *dsa)
+void check_revolution(DSA *dsa)
 {
-    dsa->head = (dsa->head + 1) % dsa->size;
+    if (dsa->full && dsa->head == dsa->tail)
+    {
+        printf(" %d", dsa->area[dsa->head].index);
+        dsa->head = (dsa->head + 1) % dsa->size;
+        dsa->full = false;
+    }
 }
 
 void add_player(DSA *dsa, int index, int attack_power)
@@ -53,6 +60,8 @@ void add_player(DSA *dsa, int index, int attack_power)
     target->attack_power = attack_power;
     // target->score = 0;
     dsa->tail = (dsa->tail + 1) % dsa->size;
+    if (dsa->tail == dsa->head)
+        dsa->full = true;
 }
 
 void *enter_DSA(DSA *dsa, int index, int attack_power)
@@ -61,24 +70,8 @@ void *enter_DSA(DSA *dsa, int index, int attack_power)
     uint16_t size = dsa->size, head = dsa->head, tail = dsa->tail;
     int kill_count = 0;
     printf("Round %d:", index);
-    if (area[(tail - 1 + size) % size].attack_power < attack_power && area[(tail - 1 + size) % size].index != 0)
-    {
-        kill_count = kill_othoer_players(dsa, attack_power);
-        for (int i = 1; i <= kill_count; i++)
-        {
-            printf(" %d", area[(tail - i + size) % size].index);
-        }
-        tail = (tail - kill_count + size) % size;
-        dsa->tail = tail;
-    }
-    else
-    {
-        if (tail == head && area[head].index != 0)
-        {
-            revolution(dsa);
-            printf(" %d", area[tail].index);
-        }
-    }
+    kill_othoer_players(dsa, attack_power);
+    check_revolution(dsa);
     add_player(dsa, index, attack_power);
     printf("\n");
 }
@@ -87,10 +80,11 @@ void *final_DSA(DSA *dsa)
 {
     int16_t head = dsa->head, target = dsa->tail, size = dsa->size;
     printf("Final:");
-    while (target != head)
+    while (target != head || dsa->full)
     {
         target = (target - 1 + size) % size;
         printf(" %d", dsa->area[target].index);
+        dsa->full = false;
     }
     printf("\n");
 }
