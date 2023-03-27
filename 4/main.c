@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
 
 typedef struct Player
 {
@@ -28,7 +29,7 @@ DSA *make_DSA(int16_t size)
     return dsa;
 }
 
-int16_t kill_othoer_players(DSA *dsa, int attack_power)
+void kill_other_players(DSA *dsa, int attack_power)
 {
     int16_t size = dsa->size;
     int16_t new_tail = dsa->tail;
@@ -70,7 +71,7 @@ void *enter_DSA(DSA *dsa, int index, int attack_power)
     uint16_t size = dsa->size, head = dsa->head, tail = dsa->tail;
     int kill_count = 0;
     printf("Round %d:", index);
-    kill_othoer_players(dsa, attack_power);
+    kill_other_players(dsa, attack_power);
     check_revolution(dsa);
     add_player(dsa, index, attack_power);
     printf("\n");
@@ -87,6 +88,11 @@ void *final_DSA(DSA *dsa)
         dsa->full = false;
     }
     printf("\n");
+    memset(dsa->area, 0, dsa->size * sizeof(Player));
+    free(dsa->area);
+    memset(dsa, 0, sizeof(DSA));
+    free(dsa);
+    dsa = NULL;
 }
 
 int main()
