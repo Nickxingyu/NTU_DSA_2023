@@ -16,8 +16,8 @@ typedef struct DSA
     // An array of Players
     Player *area;
     uint16_t size;
-    int16_t head;
-    int16_t tail;
+    uint16_t head;
+    uint16_t tail;
     bool full;
 } DSA;
 
@@ -69,7 +69,6 @@ void *enter_DSA(DSA *dsa, int index, int attack_power)
 {
     Player *area = dsa->area;
     uint16_t size = dsa->size, head = dsa->head, tail = dsa->tail;
-    int kill_count = 0;
     printf("Round %d:", index);
     kill_other_players(dsa, attack_power);
     check_revolution(dsa);
