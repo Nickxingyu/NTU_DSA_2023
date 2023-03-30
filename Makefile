@@ -1,5 +1,5 @@
-NUM=1
-T=$(PWD)/$(NUM)
+P=1
+T=$(PWD)/$(P)
 
 debug: mkbd
 	gcc -o $(T)/build/main $(T)/main.c -std=c11 -g
