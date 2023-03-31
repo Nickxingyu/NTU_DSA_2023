@@ -29,6 +29,15 @@ DSA *make_DSA(int16_t size)
     return dsa;
 }
 
+void free_DSA(DSA *dsa)
+{
+    memset(dsa->area, 0, dsa->size * sizeof(Player));
+    free(dsa->area);
+    memset(dsa, 0, sizeof(DSA));
+    free(dsa);
+    dsa = NULL;
+}
+
 void kill_other_players(DSA *dsa, int index, int attack_power)
 {
     int16_t size = dsa->size, new_tail = dsa->tail, head = dsa->head;
@@ -75,10 +84,8 @@ void add_player(DSA *dsa, int index, int attack_power)
         dsa->full = true;
 }
 
-void *enter_DSA(DSA *dsa, int index, int attack_power)
+void enter_DSA(DSA *dsa, int index, int attack_power)
 {
-    Player *area = dsa->area;
-    uint16_t size = dsa->size, head = dsa->head, tail = dsa->tail;
     printf("Round %d:", index);
     kill_other_players(dsa, index, attack_power);
     check_revolution(dsa, index);
@@ -86,7 +93,7 @@ void *enter_DSA(DSA *dsa, int index, int attack_power)
     printf("\n");
 }
 
-void *final_DSA(DSA *dsa, int n)
+void final_DSA(DSA *dsa, int n)
 {
     int16_t head = dsa->head, target = dsa->tail, size = dsa->size;
     int target_score = 0;
@@ -99,11 +106,6 @@ void *final_DSA(DSA *dsa, int n)
         dsa->full = false;
     }
     printf("\n");
-    memset(dsa->area, 0, dsa->size * sizeof(Player));
-    free(dsa->area);
-    memset(dsa, 0, sizeof(DSA));
-    free(dsa);
-    dsa = NULL;
 }
 
 int main()
@@ -121,5 +123,6 @@ int main()
         enter_DSA(dsa, i, input);
     }
     final_DSA(dsa, n);
+    free_DSA(dsa);
     return 0;
 }

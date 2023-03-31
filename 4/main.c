@@ -8,7 +8,6 @@ typedef struct Player
 {
     int index;
     int attack_power;
-    // int score;
 } Player;
 
 typedef struct DSA
@@ -27,6 +26,15 @@ DSA *make_DSA(int16_t size)
     dsa->size = size;
     dsa->area = (Player *)calloc(size, sizeof(Player));
     return dsa;
+}
+
+void free_DSA(DSA *dsa)
+{
+    memset(dsa->area, 0, dsa->size * sizeof(Player));
+    free(dsa->area);
+    memset(dsa, 0, sizeof(DSA));
+    free(dsa);
+    dsa = NULL;
 }
 
 void kill_other_players(DSA *dsa, int attack_power)
@@ -59,16 +67,13 @@ void add_player(DSA *dsa, int index, int attack_power)
     Player *target = &(dsa->area[dsa->tail]);
     target->index = index;
     target->attack_power = attack_power;
-    // target->score = 0;
     dsa->tail = (dsa->tail + 1) % dsa->size;
     if (dsa->tail == dsa->head)
         dsa->full = true;
 }
 
-void *enter_DSA(DSA *dsa, int index, int attack_power)
+void enter_DSA(DSA *dsa, int index, int attack_power)
 {
-    Player *area = dsa->area;
-    uint16_t size = dsa->size, head = dsa->head, tail = dsa->tail;
     printf("Round %d:", index);
     kill_other_players(dsa, attack_power);
     check_revolution(dsa);
@@ -76,7 +81,7 @@ void *enter_DSA(DSA *dsa, int index, int attack_power)
     printf("\n");
 }
 
-void *final_DSA(DSA *dsa)
+void final_DSA(DSA *dsa)
 {
     int16_t head = dsa->head, target = dsa->tail, size = dsa->size;
     printf("Final:");
@@ -87,11 +92,6 @@ void *final_DSA(DSA *dsa)
         dsa->full = false;
     }
     printf("\n");
-    memset(dsa->area, 0, dsa->size * sizeof(Player));
-    free(dsa->area);
-    memset(dsa, 0, sizeof(DSA));
-    free(dsa);
-    dsa = NULL;
 }
 
 int main()
@@ -109,5 +109,6 @@ int main()
         enter_DSA(dsa, i, input);
     }
     final_DSA(dsa);
+    free_DSA(dsa);
     return 0;
 }
