@@ -2,7 +2,7 @@ P=1
 T=$(PWD)/$(P)
 
 debug: mkbd
-	gcc -o $(T)/build/main $(T)/main.c -std=c11 -g
+	gcc -o $(T)/build/main $(T)/main.c -Wall -std=c11 -g
 
 final: mkbd
 	gcc -o $(T)/build/main $(T)/main.c -std=c11 -O2 -static
