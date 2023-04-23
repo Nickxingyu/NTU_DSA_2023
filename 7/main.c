@@ -52,30 +52,27 @@ void insert_PS(PriceSchedule* ps, ll_int price, int expired_day, int day)
 
     int tmp = ps->tail;
     ps->tail += 1;
-    SalesEvent *target, *parent;
+    SalesEvent* target = &(ps->sales_event_heap[tmp]);
+    target->price = price;
+    target->expired_day = expired_day;
     while (tmp > 0) {
-        target = &(ps->sales_event_heap[tmp]);
-        parent = &(ps->sales_event_heap[(tmp - 1) / 2]);
+        tmp = (tmp - 1) / 2;
+        SalesEvent* parent = &(ps->sales_event_heap[tmp]);
         if (parent->expired_day >= day && parent->price <= target->price)
             break;
         swapSalesEvent(target, parent);
         target = parent;
-        tmp = (tmp - 1) / 2;
     }
-    target->expired_day = expired_day;
-    target->price = price;
 }
 
 void pop_PS(PriceSchedule* ps)
 {
     if (ps->tail == 0)
         return;
-    int root = 0, tmp = ps->tail - 1, left, right, min;
+    int root = 0, tmp = ps->tail - 1, left = root * 2 + 1, right = root * 2 + 2, min;
     SalesEvent* heap = ps->sales_event_heap;
     ps->tail = ps->tail - 1;
     while (root < tmp) {
-        left = root * 2 + 1;
-        right = root * 2 + 2;
         min = tmp;
         if (left < tmp) {
             if (heap[left].price < heap[min].price)
@@ -85,17 +82,22 @@ void pop_PS(PriceSchedule* ps)
             if (heap[right].price < heap[min].price)
                 min = right;
         }
-        swapSalesEvent(&heap[min], &heap[root]);
-        if (min != tmp)
+        if (min != tmp) {
+            swapSalesEvent(&heap[min], &heap[root]);
             root = min;
-        else
+            left = root * 2 + 1;
+            right = root * 2 + 2;
+        }
+        if (min == tmp) {
+            swapSalesEvent(&heap[min], &heap[root]);
             break;
+        }
     }
 }
 
 int getPrice(PriceSchedule* ps, int day)
 {
-    while (ps->sales_event_heap->expired_day < day) {
+    while (ps->sales_event_heap[0].expired_day < day) {
         pop_PS(ps);
     }
     return ps->sales_event_heap->price;
