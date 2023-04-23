@@ -4,23 +4,23 @@ typedef long long int ll_int;
 
 typedef struct SalesEvent {
     ll_int price;
-    ll_int expired_day;
+    int expired_day;
 } SalesEvent;
 
 typedef struct PriceSchedule {
-    ll_int length;
-    ll_int tail;
+    int length;
+    int tail;
     SalesEvent* sales_event_heap;
 } PriceSchedule;
 
 typedef struct Company {
     ll_int total_price;
-    ll_int total_number_of_melon;
-    ll_int upstream;
+    int total_number_of_melon;
+    int upstream;
     PriceSchedule* price_schedule;
 } Company;
 
-PriceSchedule* makePriceSchedule(ll_int length)
+PriceSchedule* makePriceSchedule(int length)
 {
     PriceSchedule* price_schedule = (PriceSchedule*)calloc(1, sizeof(PriceSchedule));
     SalesEvent* sales_event_heap = (SalesEvent*)calloc(length, sizeof(SalesEvent));
@@ -31,7 +31,7 @@ PriceSchedule* makePriceSchedule(ll_int length)
 
 void swapSalesEvent(SalesEvent* target1, SalesEvent* target2)
 {
-    ll_int tmp_expired_day = target2->expired_day;
+    int tmp_expired_day = target2->expired_day;
     ll_int tmp_price = target2->price;
     target2->expired_day = target1->expired_day;
     target2->price = target1->price;
@@ -39,12 +39,12 @@ void swapSalesEvent(SalesEvent* target1, SalesEvent* target2)
     target1->price = tmp_price;
 }
 
-void insert_PS(PriceSchedule* ps, ll_int price, ll_int expired_day, ll_int day)
+void insert_PS(PriceSchedule* ps, ll_int price, int expired_day, int day)
 {
     if (ps->tail == ps->length)
         return;
 
-    ll_int tmp = ps->tail;
+    int tmp = ps->tail;
     ps->tail += 1;
     SalesEvent *target, *parent;
     while (tmp > 0) {
@@ -64,7 +64,7 @@ void pop_PS(PriceSchedule* ps)
 {
     if (ps->tail == 0)
         return;
-    ll_int root = 0, tmp = ps->tail - 1, left, right, min;
+    int root = 0, tmp = ps->tail - 1, left, right, min;
     SalesEvent* heap = ps->sales_event_heap;
     ps->tail = ps->tail - 1;
     while (root < tmp) {
@@ -87,7 +87,7 @@ void pop_PS(PriceSchedule* ps)
     }
 }
 
-ll_int getPrice(PriceSchedule* ps, ll_int day)
+int getPrice(PriceSchedule* ps, int day)
 {
     while (ps->sales_event_heap->expired_day < day) {
         pop_PS(ps);
@@ -95,13 +95,13 @@ ll_int getPrice(PriceSchedule* ps, ll_int day)
     return ps->sales_event_heap->price;
 }
 
-Company* initCompanyArray(ll_int N, ll_int M)
+Company* initCompanyArray(int N, int M)
 {
     Company *company_arr = (Company*)calloc(N, sizeof(Company)), *target, *upstream;
-    ll_int tmp;
+    int tmp;
     for (int n = 1; n < N; n++) {
         target = &company_arr[n];
-        scanf("%lld", &tmp);
+        scanf("%d", &tmp);
         target->total_number_of_melon = 1;
         target->upstream = tmp - 1;
         target->price_schedule = makePriceSchedule(M);
@@ -117,10 +117,10 @@ Company* initCompanyArray(ll_int N, ll_int M)
     return company_arr;
 }
 
-void purchase(ll_int N, ll_int C, Company* company_arr, ll_int day)
+void purchase(int N, ll_int C, Company* company_arr, int day)
 {
     ll_int price;
-    ll_int total_number_of_melon = 0;
+    int total_number_of_melon = 0;
     Company *target, *upstream;
     for (int n = N - 1; n >= 0; n--) {
         company_arr[n].total_price = 0;
@@ -136,18 +136,18 @@ void purchase(ll_int N, ll_int C, Company* company_arr, ll_int day)
         upstream = &company_arr[target->upstream];
         upstream->total_price += target->total_price;
     }
-    printf("%lld\n", total_number_of_melon);
+    printf("%d\n", total_number_of_melon);
 }
 
-void startPurchasePlan(ll_int N, ll_int M, ll_int C, Company* company_arr)
+void startPurchasePlan(int N, int M, ll_int C, Company* company_arr)
 {
-    ll_int expired_day;
+    int expired_day;
     ll_int price;
     for (int m = 0; m < M; m++) {
 
         // Update price schedule
         for (int n = 0; n < N; n++) {
-            scanf("%lld %lld", &price, &expired_day);
+            scanf("%lld %d", &price, &expired_day);
             expired_day += m;
             insert_PS(company_arr[n].price_schedule, price, expired_day, m);
         }
@@ -159,9 +159,9 @@ void startPurchasePlan(ll_int N, ll_int M, ll_int C, Company* company_arr)
 
 int main()
 {
-    ll_int N, M;
+    int N, M;
     ll_int C;
-    scanf("%lld %lld %lld", &N, &M, &C);
+    scanf("%d %d %lld", &N, &M, &C);
     Company* company_arr = initCompanyArray(N, M);
     startPurchasePlan(N, M, C, company_arr);
 }
