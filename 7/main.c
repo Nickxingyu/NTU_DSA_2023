@@ -13,10 +13,16 @@ typedef struct PriceSchedule {
     SalesEvent* sales_event_heap;
 } PriceSchedule;
 
+typedef struct Offspring {
+    int index;
+    struct Offspring* next;
+} Offspring;
+
 typedef struct Company {
     ll_int total_price;
     int total_number_of_melon;
     int upstream;
+    Offspring* offspring;
     PriceSchedule* price_schedule;
 } Company;
 
@@ -99,49 +105,59 @@ int getPrice(PriceSchedule* ps, int day)
 
 Company* initCompanyArray(int N, int M)
 {
-    Company *company_arr = (Company*)calloc(N, sizeof(Company)), *target, *upstream;
-    for (int n = 1; n < N; n++) {
-        int tmp;
-        target = &company_arr[n];
-        scanf("%d", &tmp);
-        target->total_number_of_melon = 1;
-        target->upstream = tmp - 1;
-        target->price_schedule = makePriceSchedule(M);
-    }
-    for (int n = N - 1; n > 0; n--) {
-        target = &company_arr[n];
-        upstream = &company_arr[target->upstream];
-        upstream->total_number_of_melon += target->total_number_of_melon;
-    }
+    Company* company_arr = (Company*)calloc(N, sizeof(Company));
+    int upstream;
     company_arr[0].upstream = -1;
-    company_arr[0].total_number_of_melon += 1;
     company_arr[0].price_schedule = makePriceSchedule(M);
+    for (int n = 1; n < N; n++) {
+        scanf("%d", &upstream);
+        upstream -= 1;
+        company_arr[n].upstream = upstream;
+        company_arr[n].price_schedule = makePriceSchedule(M);
+        Offspring* offspring = (Offspring*)calloc(1, sizeof(Offspring));
+        offspring->next = company_arr[upstream].offspring;
+        offspring->index = n;
+        company_arr[upstream].offspring = offspring;
+    }
     return company_arr;
 }
 
-void purchase(int N, ll_int C, Company* company_arr, int day)
+void calculateNumberOfMelons(Company* company_arr, int company_idx)
 {
-    ll_int price;
-    int total_number_of_melons = 0;
-    Company *target, *upstream;
-    for (int n = N - 1; n >= 0; n--) {
-        company_arr[n].total_price = 0;
+    Company* target = &company_arr[company_idx];
+    Offspring* offspring = target->offspring;
+    while (offspring != NULL) {
+        calculateNumberOfMelons(company_arr, offspring->index);
+        target->total_number_of_melon += company_arr[offspring->index].total_number_of_melon;
+        offspring = offspring->next;
     }
-    for (int n = N - 1; n > 0; n--) {
+    target->total_number_of_melon += 1;
+}
+
+void updateCompany(Company* company_arr, int company_idx, int day)
+{
+    Company* target = &company_arr[company_idx];
+    Offspring* offspring = target->offspring;
+    target->total_price = 0;
+    while (offspring != NULL) {
+        updateCompany(company_arr, offspring->index, day);
+        target->total_price += company_arr[offspring->index].total_price;
+        offspring = offspring->next;
+    }
+    target->total_price += getPrice(target->price_schedule, day);
+}
+
+int purchase(int N, ll_int C, Company* company_arr)
+{
+    int max_number_of_melons = 0;
+    Company* target;
+    for (int n = 0; n < N; n++) {
         target = &company_arr[n];
-        upstream = &company_arr[target->upstream];
-        price = getPrice(target->price_schedule, day);
-        target->total_price += price;
-        upstream->total_price += target->total_price;
-        if (target->total_price <= C && target->total_number_of_melon > total_number_of_melons)
-            total_number_of_melons = target->total_number_of_melon;
+        if (target->total_price <= C && target->total_number_of_melon > max_number_of_melons) {
+            max_number_of_melons = target->total_number_of_melon;
+        }
     }
-    target = &company_arr[0];
-    price = getPrice(target->price_schedule, day);
-    target->total_price += price;
-    if (target->total_price <= C && target->total_number_of_melon > total_number_of_melons)
-        total_number_of_melons = target->total_number_of_melon;
-    printf("%d\n", total_number_of_melons);
+    return max_number_of_melons;
 }
 
 void startPurchasePlan(int N, int M, ll_int C, Company* company_arr)
@@ -157,8 +173,11 @@ void startPurchasePlan(int N, int M, ll_int C, Company* company_arr)
             insert_PS(company_arr[n].price_schedule, price, expired_day, m);
         }
 
+        // Update company array
+        updateCompany(company_arr, 0, m);
+
         // Purchase
-        purchase(N, C, company_arr, m);
+        printf("%d\n", purchase(N, C, company_arr));
     }
 }
 
@@ -168,5 +187,6 @@ int main()
     ll_int C;
     scanf("%d %d %lld", &N, &M, &C);
     Company* company_arr = initCompanyArray(N, M);
+    calculateNumberOfMelons(company_arr, 0);
     startPurchasePlan(N, M, C, company_arr);
 }
