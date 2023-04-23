@@ -58,7 +58,7 @@ void insert_PS(PriceSchedule* ps, ll_int price, int expired_day, int day)
     while (tmp > 0) {
         tmp = (tmp - 1) / 2;
         SalesEvent* parent = &(ps->sales_event_heap[tmp]);
-        if (parent->expired_day >= day && parent->price <= target->price)
+        if (parent->price <= target->price)
             break;
         swapSalesEvent(target, parent);
         target = parent;
