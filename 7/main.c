@@ -55,7 +55,7 @@ void insert_PS(PriceSchedule* ps, ll_int price, int expired_day, int day)
         if (parent->expired_day >= day && parent->price <= target->price)
             break;
         swapSalesEvent(target, parent);
-        target = &(ps->sales_event_heap[tmp]);
+        target = parent;
     }
 }
 
@@ -127,7 +127,7 @@ void purchase(int N, ll_int C, Company* company_arr, int day)
     for (int n = N - 1; n >= 0; n--) {
         company_arr[n].total_price = 0;
     }
-    for (int n = N - 1; n >= 0; n--) {
+    for (int n = N - 1; n > 0; n--) {
         target = &company_arr[n];
         upstream = &company_arr[target->upstream];
         price = getPrice(target->price_schedule, day);
@@ -136,6 +136,11 @@ void purchase(int N, ll_int C, Company* company_arr, int day)
         if (target->total_price <= C && target->total_number_of_melon > total_number_of_melons)
             total_number_of_melons = target->total_number_of_melon;
     }
+    target = &company_arr[0];
+    price = getPrice(target->price_schedule, day);
+    target->total_price += price;
+    if (target->total_price <= C && target->total_number_of_melon > total_number_of_melons)
+        total_number_of_melons = target->total_number_of_melon;
     printf("%d\n", total_number_of_melons);
 }
 
