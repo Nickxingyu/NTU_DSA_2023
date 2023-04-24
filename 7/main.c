@@ -2,6 +2,9 @@
 #include <stdlib.h>
 typedef long long int ll_int;
 
+/**
+ *  Sales Event Heap
+ */
 typedef struct SalesEvent {
     ll_int price;
     int expired_day;
@@ -13,6 +16,9 @@ typedef struct PriceSchedule {
     SalesEvent* sales_event_heap;
 } PriceSchedule;
 
+/**
+ *  Company Tree
+ */
 typedef struct Offspring {
     int index;
     struct Offspring* next;
@@ -21,11 +27,13 @@ typedef struct Offspring {
 typedef struct Company {
     ll_int total_price;
     int total_number_of_melon;
-    int upstream;
     Offspring* offspring;
     PriceSchedule* price_schedule;
 } Company;
 
+/**
+ *  Operations of Sales Event Heap
+ */
 PriceSchedule* makePriceSchedule(int length)
 {
     PriceSchedule* price_schedule = (PriceSchedule*)calloc(1, sizeof(PriceSchedule));
@@ -103,16 +111,17 @@ int getPrice(PriceSchedule* ps, int day)
     return ps->sales_event_heap->price;
 }
 
+/**
+ *  Operations of Company Tree
+ */
 Company* initCompanyArray(int N, int M)
 {
     Company* company_arr = (Company*)calloc(N, sizeof(Company));
     int upstream;
-    company_arr[0].upstream = -1;
     company_arr[0].price_schedule = makePriceSchedule(M);
     for (int n = 1; n < N; n++) {
         scanf("%d", &upstream);
         upstream -= 1;
-        company_arr[n].upstream = upstream;
         company_arr[n].price_schedule = makePriceSchedule(M);
         Offspring* offspring = (Offspring*)calloc(1, sizeof(Offspring));
         offspring->next = company_arr[upstream].offspring;
