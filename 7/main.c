@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
-typedef long long int ll_int;
+#define MaxLength 1000000000
 
+typedef long long int ll_int;
 /**
  *  Sales Event Heap
  */
@@ -192,6 +193,10 @@ void startPurchasePlan(int N, int M, ll_int C, Company* company_arr)
 
 int main()
 {
+    int arr[MaxLength];
+    for (int i = 0; i < MaxLength; i++) {
+        arr[i] = i;
+    }
     int N, M;
     ll_int C;
     scanf("%d %d %lld", &N, &M, &C);
