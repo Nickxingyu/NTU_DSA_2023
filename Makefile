@@ -12,3 +12,6 @@ clean:
 
 mkbd:
 	mkdir $(T)/build || echo 'build dir exist'
+
+run: debug
+	$(T)/build/main

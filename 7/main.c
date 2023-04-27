@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#define MaxLength 100000000000
 
 typedef long long int ll_int;
 /**
@@ -193,10 +192,6 @@ void startPurchasePlan(int N, int M, ll_int C, Company* company_arr)
 
 int main()
 {
-    int arr[MaxLength];
-    for (int i = 0; i < MaxLength; i++) {
-        arr[i] = i;
-    }
     int N, M;
     ll_int C;
     scanf("%d %d %lld", &N, &M, &C);
