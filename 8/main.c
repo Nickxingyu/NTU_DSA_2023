@@ -1,96 +1,146 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 typedef struct Cat {
+    int idx;
     int color;
     int appetite;
     struct Cat* next;
+    struct Cat* pre;
 } Cat;
 
-typedef struct AllCatLinkedList {
+typedef struct CatsLinkedList {
     Cat* min;
     Cat* max;
-} AllCatLinkedList;
+    Cat* arr;
+} CatsLinkedList;
 
-typedef struct ColorCatCircularArray {
-    int size;
-    Cat** cat_ptr;
-} ColorCatCircularArray;
-
-typedef struct ColorMapping {
+typedef struct CatCircularArray {
     int color;
-    ColorCatCircularArray* cc_c_arr;
-} ColorMapping;
+    int size;
+    int head;
+    Cat** base;
+} CatCircularArray;
 
 typedef struct ColorManager {
     int n_color;
-    ColorMapping* cm_arr;
+    int* cca_idx;
+    int* cat_idx_in_cca;
+    CatCircularArray* cc_arr;
 } ColorManager;
 
 /**
  * Operations
  *
- * - AllCatLinkedList
+ * - CatsLinkedList
  *      1. swap
  *      2. magic - remove
  *      3. magic - insert to max or min
  *
- * - ColorCatCircularArray
- *      1. sort
- *      2. swap
- *      3. magic
- *      4. binary search on circular array
+ * - CatsCircularArray
+ *      1. swap
+ *      2. magic
+ *      3. binary search on circular array
  *
  * - ColorManager
- *      1. sort
- *      2. binary search on array
+ *      1. binary search on array
  */
+void show(CatsLinkedList* c_ll, ColorManager* cm)
+{
+    Cat* tmp;
+    tmp = c_ll->min;
+    while (tmp != NULL) {
+        printf("%d -> ", tmp->idx);
+        tmp = tmp->next;
+    }
+    printf("NULL\n");
+
+    tmp = c_ll->min;
+    while (tmp != NULL) {
+        printf("%d -> ", tmp->appetite);
+        tmp = tmp->next;
+    }
+    printf("NULL\n");
+
+    for (int n = 0; n < cm->n_color; n++) {
+        printf("Color: %d\n", cm->cc_arr[n].color);
+        for (int c = 0; c < cm->cc_arr[n].size; c++) {
+            printf("%d %d\n", cm->cc_arr[n].base[c]->color, cm->cc_arr[n].base[c]->idx);
+        }
+    }
+}
+
+void swap_op(CatsLinkedList* c_ll, ColorManager* cm, int idx);
 
 /**
- * Methods of All Cat Linked List
+ *  Methods of Cat
  */
 
+void sortCatsPtr(Cat** all_cat_ptr, int N);
+
 /**
- *  Methods of Color Cat Circular Array
+ * Methods of Cat Linked List
  */
-void sortColorCat(ColorCatCircularArray* cc_c_arr);
+
+CatsLinkedList* makeCatsLinkedList(Cat* all_cats, Cat** all_cats_ptr, int N);
+
+void removeCat(CatsLinkedList* c_ll, Cat* target);
+
+void insertAfter(CatsLinkedList* c_ll, Cat* target, Cat* cat);
+
+void swap_appetite(Cat* c1, Cat* c2);
+
+void swap_on_ll(CatsLinkedList* c_ll, int idx);
+
+/**
+ *  Methods of Cat Circular Array
+ */
 
 /**
  *  Methods of Color Manager
  */
 ColorManager* makeColorManager(int max_size);
 
-void addColor(ColorManager* cm, int color);
+void sortColorCats(Cat** cat, int N);
 
-void sortColor(ColorManager* cm);
+void buildColorCatCircularArray(ColorManager* cm, Cat** all_cats_ptr, int N);
 
-void removeDuplicateColor(ColorManager* cm);
+CatCircularArray* findColor(ColorManager* cm, int color);
 
-void buildColorCatCircularArray(ColorManager* cm, Cat* all_cats);
-
-ColorCatCircularArray* findColor(ColorManager* cm);
+void swap_on_cca(ColorManager* cm, int idx);
 
 int main()
 {
     int N, M, color;
     scanf("%d %d", &N, &M);
-    Cat* cat_ptr;
-    Cat* all_cats = (Cat*)calloc(N, sizeof(Cat));
+    // Cat* cat_ptr;
+    Cat *all_cats = (Cat*)calloc(N, sizeof(Cat)), *tmp;
+    Cat** all_cats_ptr = (Cat**)calloc(N, sizeof(Cat*));
     ColorManager* color_manager = makeColorManager(N);
 
     for (int n = 0; n < N; n++) {
+        all_cats[n].idx = n;
+        all_cats_ptr[n] = &all_cats[n];
         scanf("%d", &(all_cats[n].appetite));
     }
 
     for (int n = 0; n < N; n++) {
         scanf("%d", &color);
         all_cats[n].color = color;
-        addColor(color_manager, color);
     }
 
-    sortColor(color_manager);
-    removeDuplicateColor(color_manager);
-    buildColorCatCircularArray(color_manager, all_cats);
+    sortCatsPtr(all_cats_ptr, N);
+    CatsLinkedList* c_ll = makeCatsLinkedList(all_cats, all_cats_ptr, N);
+    buildColorCatCircularArray(color_manager, all_cats_ptr, N);
+
+    show(c_ll, color_manager);
+    printf("\nSwap ! !\n\n");
+    swap_op(c_ll, color_manager, 3);
+    show(c_ll, color_manager);
+
+    all_cats = NULL;
+    all_cats_ptr = NULL;
 
     // TODO Sort Color Mapping Array and every Color Cat Circular Array.
 }
@@ -99,15 +149,111 @@ int main()
  *  Define Function
  */
 
+void swap_op(CatsLinkedList* c_ll, ColorManager* cm, int idx)
+{
+    Cat* target = &(c_ll->arr[idx]);
+    Cat* next = target->next;
+    if (next == NULL)
+        return;
+    swap_on_ll(c_ll, idx);
+    if (target->color == next->color)
+        swap_on_cca(cm, idx);
+}
+
 /**
- * Methods of All Cat Linked List
+ * Methods of Cat
  */
+
+int cmpCat(const void* c1, const void* c2)
+{
+    Cat** cat1 = (Cat**)c1;
+    Cat** cat2 = (Cat**)c2;
+    return (*cat1)->appetite - (*cat2)->appetite;
+}
+
+void sortCatsPtr(Cat** all_cat_ptr, int N)
+{
+    qsort(all_cat_ptr, N, sizeof(Cat*), cmpCat);
+}
+
+/**
+ * Methods of All Cats Linked List
+ */
+
+CatsLinkedList* makeCatsLinkedList(Cat* all_cats, Cat** all_cats_ptr, int N)
+{
+    CatsLinkedList* ll = (CatsLinkedList*)calloc(1, sizeof(CatsLinkedList));
+    ll->arr = all_cats;
+    ll->min = all_cats_ptr[0];
+    ll->max = all_cats_ptr[N - 1];
+    all_cats_ptr[0]->next = all_cats_ptr[1];
+    for (int n = 1; n < N - 1; n++) {
+        all_cats_ptr[n]->next = all_cats_ptr[n + 1];
+        all_cats_ptr[n]->pre = all_cats_ptr[n - 1];
+    }
+    all_cats_ptr[N - 1]->pre = all_cats_ptr[N - 2];
+    return ll;
+}
 
 /**
  *  Methods of Color Cat Circular Array
  */
-void sortColorCat(ColorCatCircularArray* cc_c_arr)
+
+void removeCat(CatsLinkedList* c_ll, Cat* target)
 {
+    Cat *next, *pre;
+    if (target == NULL)
+        return;
+    next = target->next;
+    pre = target->pre;
+    target->next = NULL;
+    target->pre = NULL;
+    if (next == NULL)
+        c_ll->max = pre;
+    else
+        next->pre = pre;
+    if (pre == NULL)
+        c_ll->min = next;
+    else
+        pre->next = next;
+}
+
+void insertAfter(CatsLinkedList* c_ll, Cat* target, Cat* cat)
+{
+    Cat* next;
+    if (target == NULL)
+        target = c_ll->max;
+    if (target == NULL) {
+        c_ll->max = cat;
+        c_ll->min = cat;
+    }
+    next = target->next;
+    target->next = cat;
+    cat->pre = target;
+    cat->next = next;
+
+    if (next == NULL)
+        c_ll->max = cat;
+    if (next != NULL)
+        next->pre = cat;
+}
+
+void swap_appetite(Cat* c1, Cat* c2)
+{
+    int tmp = c1->appetite;
+    c1->appetite = c2->appetite;
+    c2->appetite = tmp;
+}
+
+void swap_on_ll(CatsLinkedList* c_ll, int idx)
+{
+    Cat *target = &(c_ll->arr[idx]), *next = c_ll->arr[idx].next;
+    if (next == NULL)
+        return;
+
+    swap_appetite(target, next);
+    removeCat(c_ll, target);
+    insertAfter(c_ll, next, target);
 }
 
 /**
@@ -116,46 +262,89 @@ void sortColorCat(ColorCatCircularArray* cc_c_arr)
 ColorManager* makeColorManager(int max_size)
 {
     ColorManager* color_manager = (ColorManager*)calloc(1, sizeof(ColorManager));
-    ColorMapping* color_mapping = (ColorMapping*)calloc(max_size, sizeof(ColorMapping));
-    color_manager->cm_arr = color_mapping;
+    CatCircularArray* color_mapping = (CatCircularArray*)calloc(max_size, sizeof(CatCircularArray));
+    color_manager->cc_arr = color_mapping;
+    return color_manager;
 }
 
-int cmpColor(const void* c1, const void* c2)
+int cmpColorCat(const void* c1, const void* c2)
 {
-    return ((ColorMapping*)c1)->color - ((ColorMapping*)c2)->color;
+    Cat** cat1 = (Cat**)c1;
+    Cat** cat2 = (Cat**)c2;
+    if ((*cat1)->color != (*cat2)->color)
+        return (*cat1)->color - (*cat2)->color;
+    return (*cat1)->appetite - (*cat2)->appetite;
 }
 
-void addColor(ColorManager* cm, int color)
+void sortColorCats(Cat** cats, int N)
 {
-    int n = cm->n_color;
-    cm->cm_arr[n].color = color;
-    cm->n_color = n + 1;
+    qsort(cats, N, sizeof(Cat*), cmpColorCat);
 }
 
-void sortColor(ColorManager* cm)
+CatCircularArray* findColor(ColorManager* cm, int color)
 {
-    qsort(cm->cm_arr, cm->n_color, sizeof(ColorMapping), cmpColor);
-}
-
-void removeDuplicateColor(ColorManager* cm)
-{
-    int l = 1, r = 1, n_color = cm->n_color, cur_color = cm->cm_arr[0].color;
-    ColorMapping* cm_arr = cm->cm_arr;
-    while (r < n_color) {
-        if (cm_arr[r].color != cur_color) {
-            cm_arr[l].color = cm_arr[r].color;
-            cur_color = cm_arr[l].color;
-            l += 1;
+    int l = 0, r = cm->n_color - 1, mid, mid_color;
+    CatCircularArray* cc_arr = cm->cc_arr;
+    while (l <= r) {
+        mid = (l + r) / 2;
+        mid_color = cc_arr[mid].color;
+        if (mid_color == color)
+            return &cc_arr[mid];
+        else if (mid_color < color) {
+            l = mid + 1;
+        } else {
+            r = mid - 1;
         }
-        r += 1;
     }
-    cm->n_color = l;
+    return NULL;
 }
 
-void buildColorCatCircularArray(ColorManager* cm, Cat* all_cats)
+void buildColorCatCircularArray(ColorManager* cm, Cat** all_cats_ptr, int N)
 {
+    int n_color = 0, cur_color = 0, cur_cca = 0, cur_head = 0, idx = all_cats_ptr[0]->idx, offset = 1;
+    sortColorCats(all_cats_ptr, N);
+
+    for (int n = 0; n < N; n++) {
+        if (all_cats_ptr[n]->color != cur_color) {
+            n_color += 1;
+            cur_color = all_cats_ptr[n]->color;
+        }
+    }
+    cm->n_color = n_color;
+
+    cm->cc_arr = (CatCircularArray*)calloc(n_color, sizeof(CatCircularArray));
+    cm->cc_arr[cur_cca].color = all_cats_ptr[0]->color;
+    cm->cc_arr[cur_cca].base = &(all_cats_ptr[0]);
+    cm->cca_idx = (int*)calloc(N, sizeof(int));
+    cm->cat_idx_in_cca = (int*)calloc(N, sizeof(int));
+    cm->cca_idx[idx] = 0;
+    cm->cat_idx_in_cca[idx] = 0;
+    cur_color = all_cats_ptr[0]->color;
+    for (int n = 1; n < N; n++) {
+        if (all_cats_ptr[n]->color != cur_color) {
+            cm->cc_arr[cur_cca].size = n - cur_head;
+            cur_color = all_cats_ptr[n]->color;
+            cur_head = n;
+            cur_cca += 1;
+            cm->cc_arr[cur_cca].color = cur_color;
+            cm->cc_arr[cur_cca].base = &(all_cats_ptr[n]);
+            offset = 0;
+        }
+        idx = all_cats_ptr[n]->idx;
+        cm->cca_idx[idx] = cur_cca;
+        cm->cat_idx_in_cca[idx] = offset;
+        offset += 1;
+    }
+    cm->cc_arr[n_color - 1].size = N - cur_head;
 }
 
-ColorCatCircularArray* findColor(ColorManager* cm)
+void swap_on_cca(ColorManager* cm, int idx)
 {
+    CatCircularArray* cca = &(cm->cc_arr[cm->cca_idx[idx]]);
+    int idx_in_cca = cm->cat_idx_in_cca[idx];
+    if (idx_in_cca >= cca->size - 1)
+        return;
+    Cat* tmp = cca->base[idx_in_cca];
+    cca->base[idx_in_cca] = cca->base[idx_in_cca + 1];
+    cca->base[idx_in_cca + 1] = tmp;
 }
