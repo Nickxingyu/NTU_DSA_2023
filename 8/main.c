@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#define HIGHEST 1
+#define LOWEST 0
+#define SUCCESS 1
+#define FAILURE 0
 
 typedef struct Cat {
     int idx;
@@ -11,6 +15,7 @@ typedef struct Cat {
 } Cat;
 
 typedef struct CatsLinkedList {
+    int size;
     Cat* min;
     Cat* max;
     Cat* arr;
@@ -49,6 +54,7 @@ typedef struct ColorManager {
 void show(CatsLinkedList* c_ll, ColorManager* cm)
 {
     Cat* tmp;
+    int idx = 0;
     tmp = c_ll->min;
     while (tmp != NULL) {
         printf("%d -> ", tmp->idx);
@@ -66,12 +72,14 @@ void show(CatsLinkedList* c_ll, ColorManager* cm)
     for (int n = 0; n < cm->n_color; n++) {
         printf("Color: %d\n", cm->cc_arr[n].color);
         for (int c = 0; c < cm->cc_arr[n].size; c++) {
-            printf("%d %d\n", cm->cc_arr[n].base[c]->color, cm->cc_arr[n].base[c]->idx);
+            idx = (cm->cc_arr[n].head + c) % cm->cc_arr[n].size;
+            printf("%d %d %d\n", idx, cm->cc_arr[n].base[idx]->color, cm->cc_arr[n].base[idx]->idx);
         }
     }
 }
 
 void swap_op(CatsLinkedList* c_ll, ColorManager* cm, int idx);
+void magic_op(CatsLinkedList* c_ll, ColorManager* cm, int color, int dir, int success);
 
 /**
  *  Methods of Cat
@@ -89,9 +97,15 @@ void removeCat(CatsLinkedList* c_ll, Cat* target);
 
 void insertAfter(CatsLinkedList* c_ll, Cat* target, Cat* cat);
 
+void insertBefore(CatsLinkedList* c_ll, Cat* target, Cat* cat);
+
 void swap_appetite(Cat* c1, Cat* c2);
 
 void swap_on_ll(CatsLinkedList* c_ll, int idx);
+
+Cat* getCat(CatsLinkedList* c_ll, int idx);
+
+void magic_on_ll(CatsLinkedList* c_ll, int idx, int success);
 
 /**
  *  Methods of Cat Circular Array
@@ -109,6 +123,8 @@ void buildColorCatCircularArray(ColorManager* cm, Cat** all_cats_ptr, int N);
 CatCircularArray* findColor(ColorManager* cm, int color);
 
 void swap_on_cca(ColorManager* cm, int idx);
+
+void magic_on_cca(CatCircularArray* cca, int dir, int success, int appetite);
 
 int main()
 {
@@ -135,8 +151,8 @@ int main()
     buildColorCatCircularArray(color_manager, all_cats_ptr, N);
 
     show(c_ll, color_manager);
-    printf("\nSwap ! !\n\n");
-    swap_op(c_ll, color_manager, 3);
+    printf("\nMagic ! !\n\n");
+    magic_op(c_ll, color_manager, 1, HIGHEST, SUCCESS);
     show(c_ll, color_manager);
 
     all_cats = NULL;
@@ -151,13 +167,35 @@ int main()
 
 void swap_op(CatsLinkedList* c_ll, ColorManager* cm, int idx)
 {
-    Cat* target = &(c_ll->arr[idx]);
+    if (idx >= c_ll->size)
+        return;
+    Cat* target = getCat(c_ll, idx);
+    if (target == NULL)
+        return;
     Cat* next = target->next;
     if (next == NULL)
         return;
     swap_on_ll(c_ll, idx);
     if (target->color == next->color)
         swap_on_cca(cm, idx);
+}
+
+void magic_op(CatsLinkedList* c_ll, ColorManager* cm, int color, int dir, int success)
+{
+    CatCircularArray* cca = findColor(cm, color);
+    if (cca == NULL)
+        return;
+    int appetite, idx;
+    if (success == SUCCESS)
+        appetite = c_ll->max->appetite + 1;
+    else
+        appetite = c_ll->min->appetite - 1;
+    if (dir == LOWEST)
+        idx = cca->base[cca->head]->idx;
+    else
+        idx = cca->base[(cca->head - 1 + cca->size) % cca->size]->idx;
+    magic_on_cca(cca, dir, success, appetite);
+    magic_on_ll(c_ll, idx, success);
 }
 
 /**
@@ -183,6 +221,7 @@ void sortCatsPtr(Cat** all_cat_ptr, int N)
 CatsLinkedList* makeCatsLinkedList(Cat* all_cats, Cat** all_cats_ptr, int N)
 {
     CatsLinkedList* ll = (CatsLinkedList*)calloc(1, sizeof(CatsLinkedList));
+    ll->size = N;
     ll->arr = all_cats;
     ll->min = all_cats_ptr[0];
     ll->max = all_cats_ptr[N - 1];
@@ -195,6 +234,35 @@ CatsLinkedList* makeCatsLinkedList(Cat* all_cats, Cat** all_cats_ptr, int N)
     return ll;
 }
 
+Cat* getCat(CatsLinkedList* c_ll, int idx)
+{
+    if (idx >= c_ll->size)
+        return NULL;
+    return &(c_ll->arr[idx]);
+}
+
+void swap_on_ll(CatsLinkedList* c_ll, int idx)
+{
+    Cat *target = &(c_ll->arr[idx]), *next = c_ll->arr[idx].next;
+    if (next == NULL)
+        return;
+
+    swap_appetite(target, next);
+    removeCat(c_ll, target);
+    insertAfter(c_ll, next, target);
+}
+
+void magic_on_ll(CatsLinkedList* c_ll, int idx, int success)
+{
+    Cat* target = getCat(c_ll, idx);
+    if (target == NULL)
+        return;
+    removeCat(c_ll, target);
+    if (success == SUCCESS)
+        insertAfter(c_ll, c_ll->max, target);
+    else
+        insertBefore(c_ll, c_ll->min, target);
+}
 /**
  *  Methods of Color Cat Circular Array
  */
@@ -208,14 +276,16 @@ void removeCat(CatsLinkedList* c_ll, Cat* target)
     pre = target->pre;
     target->next = NULL;
     target->pre = NULL;
-    if (next == NULL)
+    if (target == c_ll->max) {
         c_ll->max = pre;
-    else
+    } else {
         next->pre = pre;
-    if (pre == NULL)
+    }
+    if (target == c_ll->min) {
         c_ll->min = next;
-    else
+    } else {
         pre->next = next;
+    }
 }
 
 void insertAfter(CatsLinkedList* c_ll, Cat* target, Cat* cat)
@@ -226,6 +296,7 @@ void insertAfter(CatsLinkedList* c_ll, Cat* target, Cat* cat)
     if (target == NULL) {
         c_ll->max = cat;
         c_ll->min = cat;
+        return;
     }
     next = target->next;
     target->next = cat;
@@ -238,22 +309,32 @@ void insertAfter(CatsLinkedList* c_ll, Cat* target, Cat* cat)
         next->pre = cat;
 }
 
+void insertBefore(CatsLinkedList* c_ll, Cat* target, Cat* cat)
+{
+    Cat* pre;
+    if (target == NULL)
+        target = c_ll->min;
+    if (target == NULL) {
+        c_ll->max = cat;
+        c_ll->min = cat;
+        return;
+    }
+    pre = target->pre;
+    target->pre = cat;
+    cat->next = target;
+    cat->pre = pre;
+
+    if (pre == NULL)
+        c_ll->min = cat;
+    if (pre != NULL)
+        pre->next = cat;
+}
+
 void swap_appetite(Cat* c1, Cat* c2)
 {
     int tmp = c1->appetite;
     c1->appetite = c2->appetite;
     c2->appetite = tmp;
-}
-
-void swap_on_ll(CatsLinkedList* c_ll, int idx)
-{
-    Cat *target = &(c_ll->arr[idx]), *next = c_ll->arr[idx].next;
-    if (next == NULL)
-        return;
-
-    swap_appetite(target, next);
-    removeCat(c_ll, target);
-    insertAfter(c_ll, next, target);
 }
 
 /**
@@ -347,4 +428,17 @@ void swap_on_cca(ColorManager* cm, int idx)
     Cat* tmp = cca->base[idx_in_cca];
     cca->base[idx_in_cca] = cca->base[idx_in_cca + 1];
     cca->base[idx_in_cca + 1] = tmp;
+}
+
+void magic_on_cca(CatCircularArray* cca, int dir, int success, int appetite)
+{
+    if (dir == HIGHEST) {
+        cca->base[(cca->head - 1 + cca->size) % cca->size]->appetite = appetite;
+        if (success != SUCCESS)
+            cca->head = (cca->head - 1 + cca->size) % cca->size;
+    } else {
+        cca->base[cca->head]->appetite = appetite;
+        if (success != FAILURE)
+            cca->head = (cca->head + 1) % cca->size;
+    }
 }
