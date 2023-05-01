@@ -37,33 +37,33 @@ typedef struct ColorManager {
     CatCircularArray* cc_arr;
 } ColorManager;
 
-// void show(CatsLinkedList* c_ll, ColorManager* cm)
-// {
-//     Cat* tmp;
-//     int idx = 0;
-//     tmp = c_ll->min;
-//     printf("-----------------------------------------------\n");
-//     while (tmp != NULL) {
-//         printf("%d -> ", tmp->idx);
-//         tmp = tmp->next;
-//     }
-//     printf("NULL\n");
+void show(CatsLinkedList* c_ll, ColorManager* cm)
+{
+    Cat* tmp;
+    int idx = 0;
+    tmp = c_ll->min;
+    printf("-----------------------------------------------\n");
+    while (tmp != NULL) {
+        printf("%d -> ", tmp->idx);
+        tmp = tmp->next;
+    }
+    printf("NULL\n");
 
-//     tmp = c_ll->min;
-//     while (tmp != NULL) {
-//         printf("%d -> ", tmp->appetite);
-//         tmp = tmp->next;
-//     }
-//     printf("NULL\n");
+    tmp = c_ll->min;
+    while (tmp != NULL) {
+        printf("%d -> ", tmp->appetite);
+        tmp = tmp->next;
+    }
+    printf("NULL\n");
 
-//     for (int n = 0; n < cm->n_color; n++) {
-//         printf("\nColor: %d\n", cm->cc_arr[n].color);
-//         for (int c = 0; c < cm->cc_arr[n].size; c++) {
-//             idx = (cm->cc_arr[n].head + c) % cm->cc_arr[n].size;
-//             printf("%d %d %d %d\n", idx, cm->cc_arr[n].base[idx]->color, cm->cc_arr[n].base[idx]->idx, cm->cc_arr[n].base[idx]->appetite);
-//         }
-//     }
-// }
+    for (int n = 0; n < cm->n_color; n++) {
+        printf("\nColor: %d\n", cm->cc_arr[n].color);
+        for (int c = 0; c < cm->cc_arr[n].size; c++) {
+            idx = (cm->cc_arr[n].head + c) % cm->cc_arr[n].size;
+            printf("%d %d %d %d\n", idx, cm->cc_arr[n].base[idx]->color, cm->cc_arr[n].base[idx]->idx, cm->cc_arr[n].base[idx]->appetite);
+        }
+    }
+}
 
 void buildAllDS(CatsLinkedList** c_ll, ColorManager** cm, Cat* all_cats, Cat** all_cats_ptr, int N);
 void swap_op(CatsLinkedList* c_ll, ColorManager* cm, int idx);
@@ -95,6 +95,7 @@ int main()
     all_cats_ptr = NULL;
 
     for (int m = 0; m < M; m++) {
+        // show(c_ll, cm);
         scanf("%d", &op);
         if (op == 2) {
             scanf("%d", &arg1);
@@ -110,6 +111,7 @@ int main()
             printf("%d\n", questioning_op(cm, arg1, arg2, arg3));
         }
     }
+    // show(c_ll, cm);
 }
 
 /**
@@ -173,12 +175,12 @@ void removeCat(CatsLinkedList* c_ll, Cat* target)
     pre = target->pre;
     target->next = NULL;
     target->pre = NULL;
-    if (target == c_ll->max) {
+    if (next == NULL) {
         c_ll->max = pre;
     } else {
         next->pre = pre;
     }
-    if (target == c_ll->min) {
+    if (pre == NULL) {
         c_ll->min = next;
     } else {
         pre->next = next;
@@ -238,11 +240,12 @@ void swap_on_ll(CatsLinkedList* c_ll, int idx)
     insertAfter(c_ll, next, target);
 }
 
-void magic_on_ll(CatsLinkedList* c_ll, int idx, int success)
+void magic_on_ll(CatsLinkedList* c_ll, int idx, int success, int appetite)
 {
     Cat* target = getCat(c_ll, idx);
     if (target == NULL)
         return;
+    target->appetite = appetite;
     removeCat(c_ll, target);
     if (success == SUCCESS)
         insertAfter(c_ll, c_ll->max, target);
@@ -253,16 +256,14 @@ void magic_on_ll(CatsLinkedList* c_ll, int idx, int success)
 /**
  *  Methods of Cat Circular Array
  */
-void magic_on_cca(CatCircularArray* cca, int dir, int success, int appetite)
+void magic_on_cca(CatCircularArray* cca, int dir, int success)
 {
+    if ((dir ^ success) == 0)
+        return;
     if (dir == HIGHEST) {
-        cca->base[(cca->head - 1 + cca->size) % cca->size]->appetite = appetite;
-        if (success != SUCCESS)
-            cca->head = (cca->head - 1 + cca->size) % cca->size;
+        cca->head = (cca->head - 1 + cca->size) % cca->size;
     } else {
-        cca->base[cca->head]->appetite = appetite;
-        if (success != FAILURE)
-            cca->head = (cca->head + 1) % cca->size;
+        cca->head = (cca->head + 1) % cca->size;
     }
 }
 
@@ -402,12 +403,11 @@ void buildColorCatCircularArray(ColorManager* cm, Cat** all_cats_ptr, int N)
 
 void swap_on_cca(ColorManager* cm, int idx)
 {
+
     CatCircularArray* cca = &(cm->cc_arr[cm->cca_idx[idx]]);
     int offset = cm->offset_in_cca[idx];
     int next_offset = (offset + 1) % cca->size;
     int next_idx = cca->base[next_offset]->idx;
-    if (offset >= cca->size - 1)
-        return;
     Cat* tmp = cca->base[offset];
     cca->base[offset] = cca->base[next_offset];
     cca->base[next_offset] = tmp;
@@ -455,8 +455,8 @@ void magic_op(CatsLinkedList* c_ll, ColorManager* cm, int color, int dir, int su
         idx = cca->base[cca->head]->idx;
     else
         idx = cca->base[(cca->head - 1 + cca->size) % cca->size]->idx;
-    magic_on_cca(cca, dir, success, appetite);
-    magic_on_ll(c_ll, idx, success);
+    magic_on_cca(cca, dir, success);
+    magic_on_ll(c_ll, idx, success, appetite);
 }
 
 int questioning_op(ColorManager* cm, int color, int lower_b, int upper_b)
