@@ -35,18 +35,12 @@ typedef struct ColorManager {
     CatCircularArray* cc_arr;
 } ColorManager;
 
-/**
- * Operations
- *
- * - CatsCircularArray
- *      1. binary search on circular array
- *
- */
 void show(CatsLinkedList* c_ll, ColorManager* cm)
 {
     Cat* tmp;
     int idx = 0;
     tmp = c_ll->min;
+    printf("-----------------------------------------------\n");
     while (tmp != NULL) {
         printf("%d -> ", tmp->idx);
         tmp = tmp->next;
@@ -61,7 +55,7 @@ void show(CatsLinkedList* c_ll, ColorManager* cm)
     printf("NULL\n");
 
     for (int n = 0; n < cm->n_color; n++) {
-        printf("Color: %d\n", cm->cc_arr[n].color);
+        printf("\nColor: %d\n", cm->cc_arr[n].color);
         for (int c = 0; c < cm->cc_arr[n].size; c++) {
             idx = (cm->cc_arr[n].head + c) % cm->cc_arr[n].size;
             printf("%d %d %d %d\n", idx, cm->cc_arr[n].base[idx]->color, cm->cc_arr[n].base[idx]->idx, cm->cc_arr[n].base[idx]->appetite);
@@ -78,7 +72,7 @@ int main()
 {
     int N, M, color, op, arg1, arg2, arg3;
     scanf("%d %d", &N, &M);
-    Cat *all_cats = (Cat*)calloc(N, sizeof(Cat)), *tmp;
+    Cat* all_cats = (Cat*)calloc(N, sizeof(Cat));
     Cat** all_cats_ptr = (Cat**)calloc(N, sizeof(Cat*));
     ColorManager* cm;
     CatsLinkedList* c_ll;
@@ -98,9 +92,8 @@ int main()
     all_cats = NULL;
     all_cats_ptr = NULL;
 
-    // show(c_ll, cm);
-
     for (int m = 0; m < M; m++) {
+        // show(c_ll, cm);
         scanf("%d", &op);
         if (op == 2) {
             scanf("%d", &arg1);
@@ -124,7 +117,6 @@ int main()
 /**
  * Methods of Cat
  */
-
 int cmpCat(const void* c1, const void* c2)
 {
     Cat** cat1 = (Cat**)c1;
@@ -147,7 +139,6 @@ void swap_appetite(Cat* c1, Cat* c2)
 /**
  * Methods of Cats Linked List
  */
-
 CatsLinkedList* makeCatsLinkedList(Cat* all_cats, Cat** all_cats_ptr, int N)
 {
     CatsLinkedList* ll = (CatsLinkedList*)calloc(1, sizeof(CatsLinkedList));
@@ -256,10 +247,10 @@ void magic_on_ll(CatsLinkedList* c_ll, int idx, int success)
     else
         insertBefore(c_ll, c_ll->min, target);
 }
+
 /**
  *  Methods of Cat Circular Array
  */
-
 void magic_on_cca(CatCircularArray* cca, int dir, int success, int appetite)
 {
     if (dir == HIGHEST) {
@@ -287,7 +278,7 @@ int binarySearchOnCircularArray(Cat** base, int head, int size, int l, int r, in
         if (appetite == value)
             return mid;
         else if (appetite > value)
-            r = mid - 1;
+            r = mid;
         else
             l = mid + 1;
     }
@@ -421,7 +412,6 @@ void swap_on_cca(ColorManager* cm, int idx)
 /**
  * Global Operations
  */
-
 void buildAllDS(CatsLinkedList** c_ll, ColorManager** cm, Cat* all_cats, Cat** all_cats_ptr, int N)
 {
     sortCatsPtr(all_cats_ptr, N);
@@ -467,6 +457,7 @@ int questioning_op(ColorManager* cm, int color, int lower_b, int upper_b)
 {
     int lower_idx, upper_idx;
     CatCircularArray* cca = findColor(cm, color);
+    // printf("\nCCA Color: %d\n", cca->color);
     if (cca == NULL)
         return 0;
     lower_idx = findLowerBound(cca, lower_b);
