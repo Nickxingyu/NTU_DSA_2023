@@ -97,15 +97,18 @@ int* makePostfixZTable(char* str, int N, int M)
 
 int calculateNumOfEffectiveMagicSpells(int* prefix_z_table, int* postfix_z_table, int N, int M)
 {
-    int cnt = 0, reverse_cnt = 0;
-    for (int i = 0; i < N; i++) {
-        if (prefix_z_table[i] == M)
-            cnt += 1;
-        if (postfix_z_table[i] != 0 && i + 1 < N)
-            reverse_cnt = postfix_z_table[i] + prefix_z_table[i + 1] - M;
-        if (reverse_cnt > 0)
+    int cnt = 0, reverse_cnt = 0, idx = N - M;
+    while (idx >= 0) {
+        if (postfix_z_table[idx] != 0 && idx + 1 < N)
+            reverse_cnt = postfix_z_table[idx] + prefix_z_table[idx + 1] - M;
+        if (reverse_cnt > 0) {
             cnt += reverse_cnt;
-        reverse_cnt = 0;
+            idx -= reverse_cnt;
+            continue;
+        }
+        if (prefix_z_table[idx] == M)
+            cnt += 1;
+        idx -= 1;
     }
     return cnt;
 }
