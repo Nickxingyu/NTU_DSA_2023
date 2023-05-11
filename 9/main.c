@@ -1,5 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
+#define S 2
+#define E 1
+#define SE (S | E)
 #define reverse(T, arr, len)            \
     {                                   \
         T tmp;                          \
@@ -13,7 +16,6 @@
         }                               \
     }
 
-void reverseIntArray(int* arr, int len);
 char* makePSP(int N, int M);
 int* makePrefixZTable(char* str, int N, int M);
 int* makePostfixZTable(char* str, int N, int M);
@@ -27,6 +29,14 @@ int main()
     char* PSP = makePSP(N, M);
     int* prefix_z_table = makePrefixZTable(PSP, N, M);
     int* postfix_z_table = makePostfixZTable(PSP, N, M);
+    // for (int i = 0; i < N; i++) {
+    //     printf("%d ", prefix_z_table[i]);
+    // }
+    // printf("\n");
+    // for (int i = 0; i < N; i++) {
+    //     printf("%d ", postfix_z_table[i]);
+    // }
+    // printf("\n");
     printf("%d", calculateNumOfEffectiveMagicSpells(prefix_z_table, postfix_z_table, N, M));
 }
 
@@ -55,24 +65,27 @@ void reverseIntArray(int* arr, int len)
 
 void z_algorithm(char* str, int* z_table, int len)
 {
-    int interval_l = 1, interval_r = 1, idx_l = 0, idx_r = 1;
-    for (idx_r = 1; idx_r < len; idx_r++) {
-        if (idx_r < interval_r) {
-            z_table[idx_r] = z_table[idx_r - interval_l];
-            continue;
+    int K, L = 0, R = 0;
+    for (int i = 1; i < len; i++) {
+        if (i > R) {
+            L = i;
+            R = i;
+            while (R < len && str[R - L] == str[R])
+                R += 1;
+            z_table[i] = R - L;
+            R -= 1;
+        } else {
+            K = i - L;
+            if (z_table[K] < R - i + 1)
+                z_table[i] = z_table[K];
+            else {
+                L = i;
+                while (R < len && str[R - L] == str[R])
+                    R += 1;
+                z_table[i] = R - L;
+                R -= 1;
+            }
         }
-        if (str[idx_r] != str[idx_l]) {
-            z_table[idx_r] = 0;
-            continue;
-        }
-        interval_l = idx_r;
-        interval_r = idx_r;
-        while (interval_r < len && str[interval_r] == str[idx_l]) {
-            interval_r += 1;
-            idx_l += 1;
-        }
-        z_table[idx_r] = idx_l;
-        idx_l = 0;
     }
 }
 
@@ -97,24 +110,28 @@ int* makePostfixZTable(char* str, int N, int M)
 
 int calculateNumOfEffectiveMagicSpells(int* prefix_z_table, int* postfix_z_table, int N, int M)
 {
-    int cnt = 0, reverse_cnt = 0, idx = 0;
-    char* record = (char*)calloc(N, sizeof(char));
-    for (int i = 0; i < N; i++) {
-        if (prefix_z_table[i] == M)
-            record[i] = 1;
-        if (postfix_z_table[i] != 0 && i + 1 < N) {
-            reverse_cnt = postfix_z_table[i] + prefix_z_table[i + 1] - M + 1;
-            idx = i - postfix_z_table[i] + 1;
-            while (reverse_cnt > 0 && idx <= i) {
-                record[idx] = 1;
-                idx += 1;
-                reverse_cnt -= 1;
-            }
+    int cnt = 0, reverse_cnt = 0, idx = 0, flag = 0;
+    if (prefix_z_table[0] == M)
+        prefix_z_table[0] = SE;
+    for (int i = 1; i < N; i++) {
+        reverse_cnt = postfix_z_table[i - 1] + prefix_z_table[i] - M;
+        prefix_z_table[i] = 0;
+        if (reverse_cnt >= 0) {
+            idx = i - postfix_z_table[i - 1];
+            prefix_z_table[idx] |= S;
+            prefix_z_table[idx + reverse_cnt] |= E;
         }
     }
-    for (int i = 0; i <= N - M; i++) {
-        if (record[i] == 1)
-            cnt += 1;
+    // for (int i = 0; i < N; i++) {
+    //     printf("%d ", prefix_z_table[i]);
+    // }
+    // printf("\n");
+    for (int i = 0; i < N - M + 1; i++) {
+        flag += (prefix_z_table[i] == S);
+        // printf("%d ", flag);
+        cnt += ((flag > 0) || (prefix_z_table[i] == SE));
+        flag -= (prefix_z_table[i] == E);
     }
+    // printf("\n");
     return cnt;
 }
