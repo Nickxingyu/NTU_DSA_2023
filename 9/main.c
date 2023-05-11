@@ -26,14 +26,6 @@ int main()
     char* PSP = makePSP(N, M);
     int* prefix_z_table = makePrefixZTable(PSP, N, M);
     int* postfix_z_table = makePostfixZTable(PSP, N, M);
-    // for (int i = 0; i < N; i++) {
-    //     printf("%d ", prefix_z_table[i]);
-    // }
-    // printf("\n");
-    // for (int i = 0; i < N; i++) {
-    //     printf("%d ", postfix_z_table[i]);
-    // }
-    // printf("\n");
     printf("%d", calculateNumOfEffectiveMagicSpells(prefix_z_table, postfix_z_table, N, M));
 }
 
@@ -48,16 +40,6 @@ char* makePSP(int N, int M)
     PSP[M] = '$';
     PSP[M + 1 + N] = '$';
     return PSP;
-}
-
-void reverseStr(char* str, int len)
-{
-    reverse(char, str, len);
-}
-
-void reverseIntArray(int* arr, int len)
-{
-    reverse(int, arr, len);
 }
 
 void z_algorithm(char* str, int* z_table, int len)
@@ -84,6 +66,16 @@ void z_algorithm(char* str, int* z_table, int len)
             }
         }
     }
+}
+
+void reverseStr(char* str, int len)
+{
+    reverse(char, str, len);
+}
+
+void reverseIntArray(int* arr, int len)
+{
+    reverse(int, arr, len);
 }
 
 int* makePrefixZTable(char* str, int N, int M)
