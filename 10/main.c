@@ -63,10 +63,14 @@ void unionSet(int s1, int s2, KnightSet* knight_set)
 {
     KnightSet *set_1 = &knight_set[s1], *set_2 = &knight_set[s2];
     int total_size = set_1->size + set_2->size;
+
+    // Increase capacity if capacity is not enough.
     if (total_size > set_1->capacity) {
         set_1->capacity *= 2;
         set_1->Knights_heap = realloc(set_1->Knights_heap, set_1->capacity * sizeof(Knight*));
     }
+
+    // Insert the elements of the smaller set to the bigger set
     for (int i = 0; i < set_2->size; i++) {
         insert(s1, knight_set, set_2->Knights_heap[i]);
     }
@@ -81,6 +85,7 @@ void swap(int l, int r, Knight** knights_heap)
     knights_heap[r] = tmp;
 }
 
+// min health heap insert
 void insert(int s, KnightSet* knight_set, Knight* knight)
 {
     KnightSet* set = &knight_set[s];
@@ -88,18 +93,22 @@ void insert(int s, KnightSet* knight_set, Knight* knight)
     set->size += 1;
     set->Knights_heap[target] = knight;
 
+    // heapify
     while (target != 0 && set->Knights_heap[(target - 1) / 2]->health > set->Knights_heap[target]->health) {
         swap((target - 1) / 2, target, set->Knights_heap);
         target = (target - 1) / 2;
     }
 }
 
+// min health heap pop
 Knight* pop(KnightSet* set)
 {
     int root = 0, min;
     swap(0, set->size - 1, set->Knights_heap);
     set->size -= 1;
     while (root < set->size) {
+
+        // Find the knight with min health.
         min = root;
         if (root * 2 + 1 < set->size) {
             if (set->Knights_heap[root * 2 + 1]->health < set->Knights_heap[min]->health) {
@@ -111,8 +120,12 @@ Knight* pop(KnightSet* set)
                 min = root * 2 + 2;
             }
         }
+
+        // If the knight with min health is root, we find the correct position of this knight.
         if (min == root)
             break;
+
+        // Keep finding
         swap(root, min, set->Knights_heap);
         root = min;
     }
@@ -122,6 +135,12 @@ Knight* pop(KnightSet* set)
 void checkAlive(KnightSet* set)
 {
     Knight* target;
+    /**
+     * If the health of knight is less than the damage of set, this knight is dead.
+     *
+     * Because Knights_heap is a min heap, we can find the knight with smallest health by checking root.
+     *
+     */
     while (set->Knights_heap[0]->health <= set->damage) {
         target = pop(set);
         target->set = -1;
@@ -134,6 +153,7 @@ void checkAlive(KnightSet* set)
  *  The operations about function 'fight'.
  */
 void attack(int a, int t, Knight* knights, KnightSet* knight_set);
+void adjust(int b_set_idx, int s_set_idx, KnightSet* knight_set);
 void settle(int n, Knight* knights, KnightSet* knight_set);
 
 void fight(int n, int m, Knight* knights, KnightSet* knight_set)
@@ -146,6 +166,16 @@ void fight(int n, int m, Knight* knights, KnightSet* knight_set)
     settle(n, knights, knight_set);
 }
 
+void adjust(int b_set_idx, int s_set_idx, KnightSet* knight_set)
+{
+    KnightSet *b_set = &knight_set[b_set_idx], *s_set = &knight_set[s_set_idx];
+    for (int i = 0; i < s_set->size; i++) {
+        s_set->Knights_heap[i]->set = b_set_idx;
+        s_set->Knights_heap[i]->health += b_set->damage - s_set->damage;
+        s_set->Knights_heap[i]->score += s_set->score - b_set->score;
+    }
+}
+
 void attack(int a, int t, Knight* knights, KnightSet* knight_set)
 {
     int a_set_idx = knights[a].set;
@@ -155,21 +185,13 @@ void attack(int a, int t, Knight* knights, KnightSet* knight_set)
 
     KnightSet* a_set = &knight_set[a_set_idx];
     KnightSet* t_set = &knight_set[t_set_idx];
+    a_set->score += 1;
+    t_set->damage += a_set->power;
     if (a_set->size >= t_set->size) {
-        a_set->score += 1;
-        for (int i = 0; i < t_set->size; i++) {
-            t_set->Knights_heap[i]->set = a_set_idx;
-            t_set->Knights_heap[i]->health -= t_set->damage + a_set->power - a_set->damage;
-            t_set->Knights_heap[i]->score += t_set->score - a_set->score;
-        }
+        adjust(a_set_idx, t_set_idx, knight_set);
         unionSet(a_set_idx, t_set_idx, knight_set);
     } else {
-        t_set->damage += a_set->power;
-        for (int i = 0; i < a_set->size; i++) {
-            a_set->Knights_heap[i]->set = t_set_idx;
-            a_set->Knights_heap[i]->health -= a_set->damage - t_set->damage;
-            a_set->Knights_heap[i]->score += a_set->score + 1 - t_set->score;
-        }
+        adjust(t_set_idx, a_set_idx, knight_set);
         unionSet(t_set_idx, a_set_idx, knight_set);
     }
 }
