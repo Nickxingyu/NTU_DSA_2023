@@ -22,9 +22,6 @@ typedef struct KnightSet {
 void init_process(int n, Knight* knights, KnightSet* knight_set);
 void fight(int n, int m, Knight* knights, KnightSet* knight_set);
 void show(int n, Knight* knights);
-void attack(int a, int t, Knight* knights, KnightSet* knight_set);
-void unionSet(int s1, int s2, KnightSet* knight_set);
-void settle(int n, Knight* knights, KnightSet* knight_set);
 
 int main()
 {
@@ -53,78 +50,41 @@ void init_process(int n, Knight* knights, KnightSet* knight_set)
     }
 }
 
-void attack(int a, int t, Knight* knights, KnightSet* knight_set)
-{
-    int a_set_idx = knights[a].set;
-    int t_set_idx = knights[t].set;
-    if (a_set_idx == t_set_idx || a_set_idx == -1 || t_set_idx == -1)
-        return;
+/**
+ *  The operations of union two knight set.
+ */
 
-    KnightSet* a_set = &knight_set[a_set_idx];
-    KnightSet* t_set = &knight_set[t_set_idx];
-    if (a_set->size >= t_set->size) {
-        a_set->score += 1;
-        for (int i = 0; i < t_set->size; i++) {
-            t_set->Knights_heap[i]->set = a_set_idx;
-            t_set->Knights_heap[i]->health -= t_set->damage + a_set->power - a_set->damage;
-            t_set->Knights_heap[i]->score += t_set->score - a_set->score;
-        }
-        unionSet(a_set_idx, t_set_idx, knight_set);
-    } else {
-        t_set->damage += a_set->power;
-        for (int i = 0; i < a_set->size; i++) {
-            a_set->Knights_heap[i]->set = t_set_idx;
-            a_set->Knights_heap[i]->health -= a_set->damage - t_set->damage;
-            a_set->Knights_heap[i]->score += a_set->score + 1 - t_set->score;
-        }
-        unionSet(t_set_idx, a_set_idx, knight_set);
+void swap(int l, int r, Knight** knights_heap);
+void insert(int s, KnightSet* knight_set, Knight* knight);
+Knight* pop(KnightSet* set);
+void checkAlive(KnightSet* set);
+
+void unionSet(int s1, int s2, KnightSet* knight_set)
+{
+    KnightSet *set_1 = &knight_set[s1], *set_2 = &knight_set[s2];
+    int total_size = set_1->size + set_2->size;
+    if (total_size > set_1->capacity) {
+        set_1->capacity *= 2;
+        set_1->Knights_heap = realloc(set_1->Knights_heap, set_1->capacity * sizeof(Knight*));
     }
+    for (int i = 0; i < set_2->size; i++) {
+        insert(s1, knight_set, set_2->Knights_heap[i]);
+    }
+    set_1->power += set_2->power;
+    checkAlive(set_1);
 }
 
-void settle(int n, Knight* knights, KnightSet* knight_set)
+void swap(int l, int r, Knight** knights_heap)
 {
-    Knight* target;
-    KnightSet* target_set;
-    for (int i = 0; i < n; i++) {
-        target = &knights[i];
-        target_set = &knight_set[target->set];
-        target->score += (target->set != -1) * target_set->score;
-    }
-}
-
-void fight(int n, int m, Knight* knights, KnightSet* knight_set)
-{
-    int a, t;
-    for (int i = 0; i < m; i++) {
-        scanf(" %d %d", &a, &t);
-        attack(a - 1, t - 1, knights, knight_set);
-        // show(n, knights);
-    }
-    settle(n, knights, knight_set);
-}
-
-void show(int n, Knight* knights)
-{
-    for (int i = 0; i < n - 1; i++) {
-        printf("%d ", knights[i].score);
-    }
-    printf("%d", knights[n - 1].score);
-}
-
-void swap(int l, int r, Knight** knight_heap)
-{
-    Knight* tmp = knight_heap[l];
-    knight_heap[l] = knight_heap[r];
-    knight_heap[r] = tmp;
+    Knight* tmp = knights_heap[l];
+    knights_heap[l] = knights_heap[r];
+    knights_heap[r] = tmp;
 }
 
 void insert(int s, KnightSet* knight_set, Knight* knight)
 {
     KnightSet* set = &knight_set[s];
     int target = set->size;
-    if (set->capacity == set->size) {
-        printf("Set %d is full.", s);
-    }
     set->size += 1;
     set->Knights_heap[target] = knight;
 
@@ -170,17 +130,69 @@ void checkAlive(KnightSet* set)
     }
 }
 
-void unionSet(int s1, int s2, KnightSet* knight_set)
+/**
+ *  The operations about function 'fight'.
+ */
+void attack(int a, int t, Knight* knights, KnightSet* knight_set);
+void settle(int n, Knight* knights, KnightSet* knight_set);
+
+void fight(int n, int m, Knight* knights, KnightSet* knight_set)
 {
-    KnightSet *set_1 = &knight_set[s1], *set_2 = &knight_set[s2];
-    int total_size = set_1->size + set_2->size;
-    if (total_size > set_1->capacity) {
-        set_1->capacity *= 2;
-        set_1->Knights_heap = realloc(set_1->Knights_heap, set_1->capacity * sizeof(Knight*));
+    int a, t;
+    for (int i = 0; i < m; i++) {
+        scanf(" %d %d", &a, &t);
+        attack(a - 1, t - 1, knights, knight_set);
     }
-    for (int i = 0; i < set_2->size; i++) {
-        insert(s1, knight_set, set_2->Knights_heap[i]);
+    settle(n, knights, knight_set);
+}
+
+void attack(int a, int t, Knight* knights, KnightSet* knight_set)
+{
+    int a_set_idx = knights[a].set;
+    int t_set_idx = knights[t].set;
+    if (a_set_idx == t_set_idx || a_set_idx == -1 || t_set_idx == -1)
+        return;
+
+    KnightSet* a_set = &knight_set[a_set_idx];
+    KnightSet* t_set = &knight_set[t_set_idx];
+    if (a_set->size >= t_set->size) {
+        a_set->score += 1;
+        for (int i = 0; i < t_set->size; i++) {
+            t_set->Knights_heap[i]->set = a_set_idx;
+            t_set->Knights_heap[i]->health -= t_set->damage + a_set->power - a_set->damage;
+            t_set->Knights_heap[i]->score += t_set->score - a_set->score;
+        }
+        unionSet(a_set_idx, t_set_idx, knight_set);
+    } else {
+        t_set->damage += a_set->power;
+        for (int i = 0; i < a_set->size; i++) {
+            a_set->Knights_heap[i]->set = t_set_idx;
+            a_set->Knights_heap[i]->health -= a_set->damage - t_set->damage;
+            a_set->Knights_heap[i]->score += a_set->score + 1 - t_set->score;
+        }
+        unionSet(t_set_idx, a_set_idx, knight_set);
     }
-    set_1->power += set_2->power;
-    checkAlive(set_1);
+}
+
+void settle(int n, Knight* knights, KnightSet* knight_set)
+{
+    Knight* target;
+    KnightSet* target_set;
+    for (int i = 0; i < n; i++) {
+        target = &knights[i];
+        target_set = &knight_set[target->set];
+        target->score += (target->set != -1) * target_set->score;
+    }
+}
+
+/**
+ *  Show the status of knights.
+ */
+
+void show(int n, Knight* knights)
+{
+    for (int i = 0; i < n - 1; i++) {
+        printf("%d ", knights[i].score);
+    }
+    printf("%d", knights[n - 1].score);
 }
