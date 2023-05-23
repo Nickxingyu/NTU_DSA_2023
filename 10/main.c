@@ -53,7 +53,6 @@ void init_process(int n, Knight* knights, KnightSet* knight_set)
 /**
  *  The operations of union two knight set.
  */
-
 void swap(int l, int r, Knight** knights_heap);
 void insert(int s, KnightSet* knight_set, Knight* knight);
 Knight* pop(KnightSet* set);
@@ -75,7 +74,6 @@ void unionSet(int s1, int s2, KnightSet* knight_set)
         insert(s1, knight_set, set_2->Knights_heap[i]);
     }
     set_1->power += set_2->power;
-    checkAlive(set_1);
 }
 
 void swap(int l, int r, Knight** knights_heap)
@@ -132,23 +130,6 @@ Knight* pop(KnightSet* set)
     return set->Knights_heap[set->size];
 }
 
-void checkAlive(KnightSet* set)
-{
-    Knight* target;
-    /**
-     * If the health of knight is less than the damage of set, this knight is dead.
-     *
-     * Because Knights_heap is a min heap, we can find the knight with smallest health by checking root.
-     *
-     */
-    while (set->Knights_heap[0]->health <= set->damage) {
-        target = pop(set);
-        target->set = -1;
-        target->score += set->score;
-        set->power -= target->power;
-    }
-}
-
 /**
  *  The operations about function 'fight'.
  */
@@ -176,6 +157,23 @@ void adjust(int b_set_idx, int s_set_idx, KnightSet* knight_set)
     }
 }
 
+void checkAlive(KnightSet* set)
+{
+    Knight* target;
+    /**
+     * If the health of knight is less than the damage of set, this knight is dead.
+     *
+     * Because Knights_heap is a min heap, we can find the knight with smallest health by checking root.
+     *
+     */
+    while (set->Knights_heap[0]->health <= set->damage) {
+        target = pop(set);
+        target->set = -1;
+        target->score += set->score;
+        set->power -= target->power;
+    }
+}
+
 void attack(int a, int t, Knight* knights, KnightSet* knight_set)
 {
     int a_set_idx = knights[a].set;
@@ -190,9 +188,11 @@ void attack(int a, int t, Knight* knights, KnightSet* knight_set)
     if (a_set->size >= t_set->size) {
         adjust(a_set_idx, t_set_idx, knight_set);
         unionSet(a_set_idx, t_set_idx, knight_set);
+        checkAlive(a_set);
     } else {
         adjust(t_set_idx, a_set_idx, knight_set);
         unionSet(t_set_idx, a_set_idx, knight_set);
+        checkAlive(t_set);
     }
 }
 
