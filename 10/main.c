@@ -66,7 +66,7 @@ void attack(int a, int t, Knight* knights, KnightSet* knight_set)
         a_set->score += 1;
         for (int i = 0; i < t_set->size; i++) {
             t_set->Knights_heap[i]->set = a_set_idx;
-            t_set->Knights_heap[i]->health -= a_set->power;
+            t_set->Knights_heap[i]->health -= t_set->damage + a_set->power - a_set->damage;
             t_set->Knights_heap[i]->score += t_set->score - a_set->score;
         }
         unionSet(a_set_idx, t_set_idx, knight_set);
@@ -74,7 +74,7 @@ void attack(int a, int t, Knight* knights, KnightSet* knight_set)
         t_set->damage += a_set->power;
         for (int i = 0; i < a_set->size; i++) {
             a_set->Knights_heap[i]->set = t_set_idx;
-            a_set->Knights_heap[i]->health += a_set->power;
+            a_set->Knights_heap[i]->health -= a_set->damage - t_set->damage;
             a_set->Knights_heap[i]->score += a_set->score + 1 - t_set->score;
         }
         unionSet(t_set_idx, a_set_idx, knight_set);
