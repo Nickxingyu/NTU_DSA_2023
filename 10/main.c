@@ -166,6 +166,7 @@ void checkAlive(KnightSet* set)
         target = pop(set);
         target->set = -1;
         target->score += set->score;
+        set->power -= target->power;
     }
 }
 
