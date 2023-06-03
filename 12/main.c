@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#define SLOT 200000033
-#define H1 1000000000000007
-#define H2 10000000000000007
+#define SLOT 100000007
+#define H1 10000000000000007
+#define H2 100000000000000007
 #define MAX_LENGTH 1000000
 #define ll long long int
 
