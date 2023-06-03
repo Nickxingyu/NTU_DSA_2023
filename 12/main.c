@@ -76,6 +76,7 @@ int find(MultiSet* ms, StringCode* sc)
     int h1 = sc->h1, h2 = sc->h2;
     StringInfo* target;
     for (int step = 0; step < SLOT; step++) {
+        // printf("%d\n", h1);
         target = ms->hash_table[h1];
         if (target == NULL)
             return h1;
@@ -144,12 +145,12 @@ ll get_pairs_cnt(MultiSet* ms)
 StringCode* encode(struct Encoder* encoder, char* s)
 {
     int len = encoder->len, d = encoder->d, min_head = 0;
-    ll c1 = 0, w1 = 1, min;
+    ll c1 = 0, min;
     StringCode* newCode = (StringCode*)calloc(1, sizeof(StringCode));
     newCode->s = (char*)calloc(len, sizeof(char));
     for (int i = 0; i < len; i++) {
-        c1 = (c1 + (s[i] - 'a') * w1) % H1;
-        w1 = (w1 * d) % H1;
+        c1 = (c1 * d) % H1;
+        c1 = (c1 + s[i] - 'a') % H1;
     }
     min = c1;
     for (int i = 0; i < len; i++) {
@@ -165,15 +166,16 @@ StringCode* encode(struct Encoder* encoder, char* s)
 
     newCode->h1 = hash_1(min);
     newCode->h2 = hash_2(min);
+    // printf("%lld %d %d %s\n", min, newCode->h1, newCode->h2, newCode->s);
     return newCode;
 }
 
 ll rotate_1(struct Encoder* encoder, ll code, char* s, int head)
 {
     ll hash = code;
-    hash = (hash + H1 - (s[head] - 'a')) % H1;
-    hash /= encoder->d;
-    hash = (hash + (s[head] - 'a') * encoder->c1_d_n) % H1;
+    hash = (hash + encoder->d * H1 - (s[head] - 'a') * encoder->c1_d_n) % H1;
+    hash = (hash * encoder->d) % H1;
+    hash = (hash + (s[head] - 'a')) % H1;
     return hash;
 }
 
