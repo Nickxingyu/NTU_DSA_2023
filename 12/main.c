@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#define SLOT 10000007
+#define SLOT 200000033
 #define H1 1000000000000007
 #define H2 10000000000000007
 #define MAX_LENGTH 1000000
