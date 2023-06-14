@@ -5,9 +5,11 @@
 #define TRUE 1
 #define bool char
 #define ll long long int
+#define H 1000000007
 
 typedef struct dp_rb_node {
-    ll diff;
+    ll cheap;
+    ll expensive;
     ll sum_odd;
     ll sum_even;
     struct dp_rb_node* p;
@@ -18,18 +20,14 @@ typedef struct dp_rb_node {
 } Node;
 
 typedef struct dp_rb_tree {
-    struct dp_rb_node* root;
+    ll max;
+    ll cost;
+    Node* root;
 } Tree;
 
-void init_node_list(Node* node_list, ll* max, int N)
+ll diff(Node* node)
 {
-    int b, s;
-    *max = 0;
-    for (int i = 0; i < N; i++) {
-        scanf("%d %d", &b, &s);
-        node_list[i].diff = b >= s ? s - b : b - s;
-        *max += b >= s ? b : s;
-    }
+    return node->cheap - node->expensive;
 }
 
 bool COLOR(Node* node)
@@ -50,9 +48,9 @@ void update_sum(Node* x)
     }
 
     if (x->is_odd == TRUE)
-        x->sum_odd += x->diff;
+        x->sum_odd += diff(x);
     else
-        x->sum_even += x->diff;
+        x->sum_even += diff(x);
 
     if (x->right != NULL) {
         if (x->is_odd == TRUE) {
@@ -69,6 +67,9 @@ void update(Node* x)
 {
     if (x == NULL)
         return;
+    if (x->left == NULL)
+        x->is_odd = TRUE;
+    update_sum(x);
     while (x->p != NULL) {
         if (x == x->p->left)
             x->p->is_odd = (x->p->is_odd + 1) % 2;
@@ -206,17 +207,22 @@ void insert_fixup(Tree* tree, Node* z)
 
 void insert_node(Tree* tree, Node* z)
 {
+    if (z == NULL)
+        return;
+
+    tree->max += z->expensive;
+
     Node *y = NULL, *x = tree->root;
     z->color = Red;
     z->left = NULL;
     z->right = NULL;
     z->is_odd = TRUE;
-    z->sum_odd = z->diff;
+    z->sum_odd = diff(z);
     z->sum_even = 0;
 
     while (x != NULL) {
         y = x;
-        if (z->diff < x->diff)
+        if (diff(z) < diff(x))
             x = x->left;
         else
             x = x->right;
@@ -225,7 +231,7 @@ void insert_node(Tree* tree, Node* z)
     z->p = y;
     if (y == NULL)
         tree->root = z;
-    else if (z->diff < y->diff)
+    else if (diff(z) < diff(y))
         y->left = z;
     else
         y->right = z;
@@ -234,7 +240,7 @@ void insert_node(Tree* tree, Node* z)
     insert_fixup(tree, z);
 }
 
-void delete_fixup(Tree* tree, Node* x)
+void delete_fixup(Tree* tree, Node* x, Node* x_p)
 {
     Node* w;
     while (x != tree->root && (COLOR(x) == Black)) {
@@ -242,17 +248,17 @@ void delete_fixup(Tree* tree, Node* x)
         /**
          * 如果我是爸爸左邊的小孩
          */
-        if (x == x->p->left) {
-            w = x->p->right;
+        if (x == x_p->left) {
+            w = x_p->right;
 
             /**
              * 如果我兄弟是紅的
              */
             if (COLOR(w) == Red) {
                 w->color = Black;
-                x->p->color = Red;
-                left_rotate(tree, x->p);
-                w = x->p->right;
+                x_p->color = Red;
+                left_rotate(tree, x_p);
+                w = x_p->right;
             }
 
             /**
@@ -260,20 +266,21 @@ void delete_fixup(Tree* tree, Node* x)
              */
             if ((COLOR(w->left) == Black) && (COLOR(w->right) == Black)) {
                 w->color = Red;
-                x = x->p;
+                x = x_p;
+                x_p = x_p->p;
             } else {
                 if (COLOR(w) == Black) {
                     if (w->left != NULL)
                         w->left->color = Black;
                     w->color = Red;
                     right_rotate(tree, w);
-                    w = x->p->right;
+                    w = x_p->right;
                 }
-                w->color = x->p->color;
-                x->p->color = Black;
+                w->color = x_p->color;
+                x_p->color = Black;
                 if (w->right != NULL)
                     w->right->color = Black;
-                left_rotate(tree, x->p);
+                left_rotate(tree, x_p);
                 x = tree->root;
                 break;
             }
@@ -283,16 +290,16 @@ void delete_fixup(Tree* tree, Node* x)
          * 如果我是爸爸右邊的小孩
          */
         else {
-            w = x->p->left;
+            w = x_p->left;
 
             /**
              * 如果我兄弟是紅的
              */
             if (COLOR(w) == Red) {
                 w->color = Black;
-                x->p->color = Red;
-                right_rotate(tree, x->p);
-                w = x->p->left;
+                x_p->color = Red;
+                right_rotate(tree, x_p);
+                w = x_p->left;
             }
 
             /**
@@ -300,20 +307,21 @@ void delete_fixup(Tree* tree, Node* x)
              */
             if ((COLOR(w->right) == Black) && (COLOR(w->left) == Black)) {
                 w->color = Red;
-                x = x->p;
+                x = x_p;
+                x_p = x_p->p;
             } else {
                 if (COLOR(w->left) == Black) {
                     if (w->right != NULL)
                         w->right->color = Black;
                     w->color = Red;
                     left_rotate(tree, w);
-                    w = x->p->left;
+                    w = x_p->left;
                 }
-                w->color = x->p->color;
-                x->p->color = Black;
+                w->color = x_p->color;
+                x_p->color = Black;
                 if (w->left != NULL)
                     w->left->color = Black;
-                right_rotate(tree, x->p);
+                right_rotate(tree, x_p);
                 x = tree->root;
                 break;
             }
@@ -353,6 +361,8 @@ void delete_node(Tree* tree, Node* z)
     if (z == NULL)
         return;
 
+    tree->max -= z->expensive;
+
     if (z->left == NULL || z->right == NULL)
         y = z;
     else {
@@ -378,37 +388,82 @@ void delete_node(Tree* tree, Node* z)
     else
         x_p->right = x;
 
+    if (z == y->p)
+        x_p = y;
     if (y != z)
         replace(z, y);
 
     if (x != NULL)
         update(x);
-    else if (x_p != NULL)
+    else if (x_p != NULL) {
         update(x_p);
+    }
 
     if (y->color == Black)
-        delete_fixup(tree, x);
+        delete_fixup(tree, x, x_p);
 }
 
 void in_order(Node* root)
 {
     if (root->left != NULL)
         in_order(root->left);
-    printf("%lld ", root->diff);
+    printf("%lld ", diff(root));
     if (root->right != NULL)
         in_order(root->right);
+}
+
+void insert_process(Tree* tree, Node* node_list, int N)
+{
+    int b, s, tmp;
+    for (int i = 0; i < N; i++) {
+        scanf("%d %d", &b, &s);
+        if (s > b) {
+            tmp = b;
+            b = s;
+            s = tmp;
+        }
+        node_list[i].expensive = b;
+        node_list[i].cheap = s;
+        insert_node(tree, &node_list[i]);
+    }
+    tree->cost = tree->max + tree->root->sum_odd;
+    printf("%lld\n", tree->cost);
+}
+
+void change(Tree* tree, Node* node, int t, int c, int d, int e, int f)
+{
+    ll cost = tree->cost, b, s, tmp;
+    b = ((c % H) * (cost % H) + (d % H)) % H;
+    s = ((e % H) * (cost % H) + (f % H)) % H;
+    if (s > b) {
+        tmp = b;
+        b = s;
+        s = tmp;
+    }
+    node->expensive = b;
+    node->cheap = s;
+}
+
+void change_process(Tree* tree, Node* node_list, int M)
+{
+    int t, c, d, e, f;
+    for (int i = 0; i < M - 1; i++) {
+        scanf(" %d %d %d %d %d", &t, &c, &d, &e, &f);
+        t -= 1;
+        delete_node(tree, &(node_list[t]));
+        change(tree, &(node_list[t]), t, c, d, e, f);
+        insert_node(tree, &(node_list[t]));
+        tree->cost = tree->max + tree->root->sum_odd;
+        printf("%lld\n", tree->cost);
+    }
 }
 
 int main()
 {
     int N, M;
     scanf("%d %d", &N, &M);
-    ll max = 0;
     Node* node_list = (Node*)calloc(N, sizeof(Node));
     Tree* rb_tree = (Tree*)calloc(1, sizeof(Tree));
-    init_node_list(node_list, &max, N);
-    for (int i = 0; i < N; i++) {
-        insert_node(rb_tree, &node_list[i]);
-    }
-    printf("%lld\n", max + rb_tree->root->sum_odd);
+    insert_process(rb_tree, node_list, N);
+    change_process(rb_tree, node_list, M);
 }
