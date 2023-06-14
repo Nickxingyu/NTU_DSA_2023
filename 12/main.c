@@ -67,7 +67,6 @@ StringInfo* make_string_info(int len, StringCode* sc)
     string_info->cnt = 1;
     string_info->s = (char*)calloc(len, sizeof(char));
     strncpy(string_info->s, sc->s, len);
-
     return string_info;
 }
 
@@ -76,7 +75,6 @@ int find(MultiSet* ms, StringCode* sc)
     int h1 = sc->h1, h2 = sc->h2;
     StringInfo* target;
     for (int step = 0; step < SLOT; step++) {
-        // printf("%d\n", h1);
         target = ms->hash_table[h1];
         if (target == NULL)
             return h1;
@@ -109,10 +107,6 @@ void insert_ms(MultiSet* ms, char* s)
 {
     StringCode* sc = encode(&encoder, s);
     int idx = find(ms, sc);
-    if (idx == -1) {
-        printf("Not Found !");
-        return;
-    }
     StringInfo* target = ms->hash_table[idx];
     if (target == NULL) {
         ms->hash_table[idx] = make_string_info(ms->string_len, sc);
@@ -126,15 +120,12 @@ void remove_ms(MultiSet* ms, char* s)
 {
     StringCode* sc = encode(&encoder, s);
     int idx = find(ms, sc);
-    if (idx == -1) {
-        printf("Not Found !");
-        return;
-    }
     StringInfo* target = ms->hash_table[idx];
-    if (target != NULL) {
-        target->cnt -= 1;
-        ms->pairs_cnt -= target->cnt;
-    }
+    if (target == NULL)
+        return;
+
+    target->cnt -= 1;
+    ms->pairs_cnt -= target->cnt;
 }
 
 ll get_pairs_cnt(MultiSet* ms)
@@ -166,7 +157,6 @@ StringCode* encode(struct Encoder* encoder, char* s)
 
     newCode->h1 = hash_1(min);
     newCode->h2 = hash_2(min);
-    // printf("%lld %d %d %s\n", min, newCode->h1, newCode->h2, newCode->s);
     return newCode;
 }
 
