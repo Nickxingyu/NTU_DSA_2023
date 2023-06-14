@@ -269,7 +269,7 @@ void delete_fixup(Tree* tree, Node* x, Node* x_p)
                 x = x_p;
                 x_p = x_p->p;
             } else {
-                if (COLOR(w) == Black) {
+                if (COLOR(w->right) == Black) {
                     if (w->left != NULL)
                         w->left->color = Black;
                     w->color = Red;
@@ -332,8 +332,11 @@ void delete_fixup(Tree* tree, Node* x, Node* x_p)
         x->color = Black;
 }
 
-void replace(Node* z, Node* y)
+void replace(Tree* tree, Node* z, Node* y)
 {
+    if (z->p == NULL)
+        tree->root = y;
+
     y->color = z->color;
     y->p = z->p;
     y->left = z->left;
@@ -372,6 +375,8 @@ void delete_node(Tree* tree, Node* z)
         }
     }
 
+    bool y_color = y->color;
+
     if (y->left != NULL)
         x = y->left;
     else
@@ -391,7 +396,7 @@ void delete_node(Tree* tree, Node* z)
     if (z == y->p)
         x_p = y;
     if (y != z)
-        replace(z, y);
+        replace(tree, z, y);
 
     if (x != NULL)
         update(x);
@@ -399,7 +404,7 @@ void delete_node(Tree* tree, Node* z)
         update(x_p);
     }
 
-    if (y->color == Black)
+    if (y_color == Black)
         delete_fixup(tree, x, x_p);
 }
 
