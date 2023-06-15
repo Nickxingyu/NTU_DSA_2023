@@ -72,7 +72,7 @@ void update(Node* x)
     update_sum(x);
     while (x->p != NULL) {
         if (x == x->p->left)
-            x->p->is_odd = (x->p->is_odd + 1) % 2;
+            x->p->is_odd = x->p->is_odd ^ 1;
         update_sum(x->p);
         x = x->p;
     }
@@ -99,7 +99,7 @@ void left_rotate(Tree* tree, Node* x)
     x->p = y;
 
     if (x->is_odd == TRUE)
-        y->is_odd = (y->is_odd + 1) % 2;
+        y->is_odd = y->is_odd ^ 1;
 
     update_sum(x);
     update_sum(y);
@@ -126,7 +126,7 @@ void right_rotate(Tree* tree, Node* y)
     y->p = x;
 
     if (x->is_odd == TRUE)
-        y->is_odd = (y->is_odd + 1) % 2;
+        y->is_odd = y->is_odd ^ 1;
 
     update_sum(y);
     update_sum(x);
